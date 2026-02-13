@@ -1,0 +1,1397 @@
+<!doctype html>
+<html lang="no" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leseloftet (MVP v3)</title>
+  <style>
+    :root{
+      --bg:#0b0d10; --panel:#12161c; --surface:#0d1117;
+      --text:#e9eef5; --muted:#9fb0c2; --line:#223041;
+      --acc:#4aa3ff; --ok:#4dffb5; --bad:#ff5a7a;
+      --r:16px; --shadow: 0 14px 36px rgba(0,0,0,.28);
+      --focus: 0 0 0 3px rgba(74,163,255,.35), 0 0 0 1px rgba(74,163,255,.6);
+      --tap: 44px;
+    }
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg,#07080a, #0b0d10 38%);
+      color:var(--text);
+    }
+    a{ color:var(--acc); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+    header{
+      position:sticky; top:0;
+      background: rgba(11,13,16,.92);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--line);
+      z-index:10;
+    }
+    .wrap{ max-width:1120px; margin:0 auto; padding:16px; }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .grow{ flex:1; min-width: 220px; }
+    .brand{ font-weight:850; letter-spacing:.2px; }
+    .pill{
+      font-size:12px; padding:6px 10px;
+      border:1px solid var(--line); border-radius:999px;
+      color:var(--muted); background: rgba(13,17,23,.55);
+    }
+    nav.tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .tab{
+      min-height: var(--tap);
+      padding:10px 12px; border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(13,17,23,.55);
+      color:var(--text); cursor:pointer; font-size:13px;
+    }
+    .tab[aria-current="page"]{
+      border-color: rgba(74,163,255,.6);
+      box-shadow: 0 0 0 1px rgba(74,163,255,.25) inset;
+      background: linear-gradient(180deg, rgba(74,163,255,.18), rgba(74,163,255,.06));
+    }
+    main{ padding-bottom: 30px; }
+    .grid{ display:grid; grid-template-columns: 1.05fr .95fr; gap:14px; margin-top:14px; }
+    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+    .card{
+      background: rgba(18,22,28,.92);
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      padding:14px;
+      box-shadow: var(--shadow);
+    }
+    h1{ font-size:16px; margin:0 0 10px; }
+    h2{ font-size:14px; margin:16px 0 8px; color:#d9e6f5; }
+    .muted{ color:var(--muted); font-size:12px; line-height:1.45; }
+    .hr{ height:1px; background:var(--line); margin:12px 0; }
+    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
+    input, select, textarea{
+      width:100%; min-height: var(--tap);
+      padding:10px 12px; border-radius:12px;
+      border:1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      outline:none;
+    }
+    textarea{ min-height: 96px; resize: vertical; }
+    input:focus, select:focus, textarea:focus, button:focus{
+      outline:none; box-shadow: var(--focus);
+      border-color: rgba(74,163,255,.6);
+    }
+    button{
+      min-height: var(--tap);
+      padding:10px 12px; border-radius:12px;
+      border:1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      cursor:pointer; font-size:13px;
+    }
+    button.primary{
+      border-color: rgba(74,163,255,.55);
+      background: linear-gradient(180deg, rgba(74,163,255,.20), rgba(74,163,255,.06));
+    }
+    button.danger{
+      border-color: rgba(255,90,122,.55);
+      background: rgba(255,90,122,.09);
+    }
+    button.ghost{ background: transparent; }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+    .split{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 560px){ .split{ grid-template-columns: 1fr; } }
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .item{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background: rgba(13,17,23,.65);
+    }
+    .item-top{ display:flex; gap:10px; align-items:flex-start; }
+    .cover{
+      width:52px; height:74px;
+      border-radius:10px;
+      background:#0a0c10;
+      border:1px solid var(--line);
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .title{ font-weight:800; font-size:14px; margin:0; }
+    .meta{ font-size:12px; color:var(--muted); margin-top:2px; }
+    .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .chip{
+      font-size:12px; padding:6px 10px;
+      border-radius:999px; border:1px solid var(--line);
+      color:var(--muted); background: rgba(13,17,23,.45);
+    }
+    .chip.ok{ border-color: rgba(77,255,181,.38); color:#b8ffe2; background: rgba(77,255,181,.07); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .statusbar{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding:10px 12px;
+      background: rgba(13,17,23,.55);
+      display:flex; justify-content: space-between;
+      gap:10px; align-items:center;
+    }
+    .spinner{
+      width:16px; height:16px; border-radius:999px;
+      border:2px solid rgba(233,238,245,.25);
+      border-top-color: rgba(233,238,245,.9);
+      animation: spin 1s linear infinite;
+      flex:0 0 auto;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce){ .spinner{ animation:none; } }
+    .errorbox{
+      border:1px solid rgba(255,90,122,.6);
+      background: rgba(255,90,122,.10);
+      border-radius: 14px;
+      padding:10px 12px;
+    }
+    .errorbox h3{ margin:0 0 6px; font-size:13px; }
+    .errorbox ul{ margin:6px 0 0; padding-left: 18px; color:#ffd3dc; }
+    .error{
+      border-color: rgba(255,90,122,.7) !important;
+      box-shadow: 0 0 0 3px rgba(255,90,122,.18) !important;
+    }
+    .toast{
+      position: fixed; left: 50%; bottom: 14px;
+      transform: translateX(-50%);
+      background: rgba(18,22,28,.96);
+      border:1px solid var(--line);
+      border-radius: 999px;
+      padding:10px 12px;
+      box-shadow: var(--shadow);
+      display:none;
+      max-width: min(900px, calc(100% - 24px));
+    }
+    .toast .msg{ font-size:12px; color:var(--text); }
+    /* RTL tweaks */
+    [dir="rtl"] .row{ flex-direction: row-reverse; }
+    [dir="rtl"] .chips{ flex-direction: row-reverse; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="wrap">
+    <div class="row">
+      <div class="brand">Leseloftet <span class="pill">MVP v3</span></div>
+      <div class="grow"></div>
+
+      <div class="row" style="gap:8px;">
+        <label for="selUiLang" class="muted" style="margin:0;">UI</label>
+        <select id="selUiLang" style="width:auto; min-height:36px;">
+          <option value="no">Norsk</option>
+          <option value="en">English</option>
+          <option value="ar">العربية</option>
+          <option value="uk">Українська</option>
+          <option value="ru">Русский</option>
+          <option value="th">ไทย</option>
+        </select>
+      </div>
+
+      <div id="sessionPill" class="pill">—</div>
+      <button id="btnLogout" class="danger" style="display:none;">Logg ut</button>
+    </div>
+
+    <nav class="tabs" aria-label="Hovednavigasjon">
+      <button class="tab" id="tabStart" aria-current="page">Start</button>
+      <button class="tab" id="tabKlasse">Klasse</button>
+      <button class="tab" id="tabFinn">Finn bok</button>
+      <button class="tab" id="tabMin">Min lesing</button>
+      <button class="tab" id="tabLaerer">Lærer</button>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap" tabindex="-1">
+  <section class="grid" id="viewStart">
+    <div class="card">
+      <h1 id="hStart">Start</h1>
+      <p class="muted" id="pStart">
+        Lokal prototype (localStorage). Språk i UI kan byttes i toppmenyen.
+      </p>
+
+      <div id="authErrors" class="errorbox" style="display:none;" role="alert" aria-live="assertive">
+        <h3 id="hFix">Rett opp dette</h3>
+        <ul id="authErrorList"></ul>
+      </div>
+
+      <div class="split" style="margin-top:10px;">
+        <div>
+          <label for="inpName" id="lName">Navn</label>
+          <input id="inpName" autocomplete="name" />
+        </div>
+        <div>
+          <label for="selRole" id="lRole">Rolle</label>
+          <select id="selRole">
+            <option value="student" id="optStudent">Elev</option>
+            <option value="teacher" id="optTeacher">Lærer</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="inpEmail" id="lEmail">E-post (valgfritt)</label>
+      <input id="inpEmail" autocomplete="email" />
+
+      <div class="row" style="margin-top:12px;">
+        <button class="primary" id="btnLogin">Logg inn</button>
+        <button class="danger" id="btnReset">Nullstill alt</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1 id="hSources">Bok-kilder i denne prototypen</h1>
+      <div class="muted" id="pSources">
+        Open Library + Wikidata + Gutendex (Project Gutenberg). NB/Oria kan kobles på via backend senere.
+      </div>
+      <div class="hr"></div>
+      <div class="muted">
+        <div class="chip">Open Library</div>
+        <div class="chip">Wikidata</div>
+        <div class="chip">Gutendex</div>
+        <div class="chip">NB (backend)</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid" id="viewKlasse" style="display:none;">
+    <div class="card">
+      <h1 id="hClass">Klasse</h1>
+
+      <div id="classStatus" class="statusbar" role="status" aria-live="polite">
+        <div class="row">
+          <div id="classSpinner" class="spinner" style="display:none;" aria-hidden="true"></div>
+          <div class="muted" id="classStatusText">—</div>
+        </div>
+        <div class="muted" id="classRoleHint">—</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div id="studentJoinBlock" style="display:none;">
+        <h2 id="hForStudent">For elev</h2>
+
+        <div id="joinErrors" class="errorbox" style="display:none;" role="alert" aria-live="assertive">
+          <h3 id="hFix2">Rett opp dette</h3>
+          <ul id="joinErrorList"></ul>
+        </div>
+
+        <label for="inpClassCode" id="lClassCode">Klassekode</label>
+        <input id="inpClassCode" class="mono" inputmode="text" autocapitalize="characters" placeholder="K7M2Q9" />
+
+        <div class="row" style="margin-top:10px;">
+          <button class="primary" id="btnJoinClass">Bli med i klasse</button>
+          <button class="ghost" id="btnLeaveClass">Forlat klasse</button>
+        </div>
+
+        <div class="muted" id="studentClassStatus" style="margin-top:8px;">—</div>
+      </div>
+
+      <div id="teacherBlock" style="display:none;">
+        <h2 id="hForTeacher">For lærer</h2>
+        <div id="teacherNoClass" class="muted">—</div>
+
+        <div id="teacherClassBox" style="display:none;">
+          <div class="row">
+            <div class="grow">
+              <div class="muted" id="mCode">Klassekode</div>
+              <div class="mono" style="font-size:20px;font-weight:950;" id="teacherClassCode">—</div>
+            </div>
+            <button id="btnCopyCode">Kopier</button>
+            <button class="danger" id="btnDeleteClass">Slett klasse</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <button class="primary" id="btnCreateClass">Opprett ny klasse</button>
+      </div>
+    </div>
+
+    <div class="card" id="teacherPanel" style="display:none;">
+      <h1 id="hTeacherOverview">Læreroversikt</h1>
+      <div class="hr"></div>
+      <div class="list" id="teacherStudentList"></div>
+    </div>
+  </section>
+
+  <section class="grid" id="viewFinn" style="display:none;">
+    <div class="card">
+      <h1 id="hFind">Finn bok</h1>
+
+      <div class="statusbar" role="status" aria-live="polite">
+        <div class="row">
+          <div id="searchSpinner" class="spinner" style="display:none;" aria-hidden="true"></div>
+          <div class="muted" id="searchInfo">—</div>
+        </div>
+        <div class="muted" id="searchSources">OL + WD + Gutenberg</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div id="searchErrors" class="errorbox" style="display:none;" role="alert" aria-live="assertive">
+        <h3 id="hFix3">Rett opp dette</h3>
+        <ul id="searchErrorList"></ul>
+      </div>
+
+      <div class="split">
+        <div>
+          <label for="inpSearch" id="lQuery">Søk</label>
+          <input id="inpSearch" placeholder="Sult / Кафка / العربية ..." />
+        </div>
+        <div>
+          <label for="selLang" id="lFilterLang">Språkfilter</label>
+          <select id="selLang">
+            <option value="">Alle</option>
+            <option value="nor">Norsk (nor)</option>
+            <option value="nob">Bokmål (nob)</option>
+            <option value="nno">Nynorsk (nno)</option>
+            <option value="eng">Engelsk (eng)</option>
+            <option value="rus">Russisk (rus)</option>
+            <option value="ara">Arabisk (ara)</option>
+            <option value="ukr">Ukrainsk (ukr)</option>
+            <option value="tha">Thai (tha)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button class="primary" id="btnSearch">Søk</button>
+        <button id="btnClearSearch">Tøm</button>
+      </div>
+
+      <div class="hr"></div>
+      <div class="list" id="searchResults"></div>
+    </div>
+
+    <div class="card">
+      <h1 id="hLangHelp">Språkstøtte</h1>
+      <div class="muted" id="pLangHelp">
+        Bytt UI-språk i toppmenyen. Arabisk får RTL automatisk.
+      </div>
+      <div class="hr"></div>
+      <div class="muted" id="pLangNote">
+        Tips: skriv søk på originalskrift (арабский/українська/ไทย) for bedre treff.
+      </div>
+    </div>
+  </section>
+
+  <section class="grid" id="viewMin" style="display:none;">
+    <div class="card">
+      <h1 id="hMine">Min lesing</h1>
+
+      <div class="split">
+        <div>
+          <label for="selShelf" id="lShelf">Vis hylle</label>
+          <select id="selShelf">
+            <option value="reading" id="optReading">Leser nå</option>
+            <option value="want" id="optWant">Vil lese</option>
+            <option value="read" id="optRead">Lest</option>
+          </select>
+        </div>
+        <div>
+          <label for="selSort" id="lSort">Sortering</label>
+          <select id="selSort">
+            <option value="recent" id="optRecent">Sist oppdatert</option>
+            <option value="title" id="optTitle">Tittel</option>
+            <option value="pages" id="optPages">Sider</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="list" id="shelfList"></div>
+    </div>
+
+    <div class="card">
+      <h1 id="hData">Data</h1>
+      <details>
+        <summary class="muted" id="sumExport">Eksport / import (JSON)</summary>
+        <div style="margin-top:10px;">
+          <div class="row">
+            <button id="btnExport">Eksporter</button>
+            <button id="btnImport">Importer</button>
+          </div>
+          <label for="txtJson" id="lJson">JSON</label>
+          <textarea id="txtJson"></textarea>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="grid" id="viewLaerer" style="display:none;">
+    <div class="card">
+      <h1 id="hTeacher">Lærer</h1>
+      <div class="muted" id="pTeacher">
+        Lærerfunksjoner ligger under “Klasse”.
+      </div>
+      <button class="primary" id="btnGoKlasse">Gå til Klasse</button>
+    </div>
+    <div class="card">
+      <h1 id="hLimit">Begrensninger</h1>
+      <div class="muted" id="pLimit">
+        NB/Oria integrasjon bør gjøres server-side (proxy) for robusthet.
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true">
+  <div class="row">
+    <div class="msg" id="toastMsg"></div>
+    <button id="toastUndo" class="primary" style="display:none;">Angre</button>
+    <button id="toastClose" class="ghost">Lukk</button>
+  </div>
+</div>
+
+<script>
+/* ============ i18n ============ */
+const I18N = {
+  no: {
+    Start:"Start", Class:"Klasse", Find:"Finn bok", Mine:"Min lesing", Teacher:"Lærer",
+    Login:"Logg inn", Logout:"Logg ut", Reset:"Nullstill alt",
+    Name:"Navn", Role:"Rolle", Student:"Elev", TeacherRole:"Lærer", Email:"E-post (valgfritt)",
+    Fix:"Rett opp dette",
+    ForStudent:"For elev", ForTeacher:"For lærer", ClassCode:"Klassekode",
+    Join:"Bli med i klasse", Leave:"Forlat klasse", CreateClass:"Opprett ny klasse",
+    Copy:"Kopier", DeleteClass:"Slett klasse",
+    Search:"Søk", Clear:"Tøm", Query:"Søk", FilterLang:"Språkfilter",
+    Shelf:"Vis hylle", Sort:"Sortering", Reading:"Leser nå", Want:"Vil lese", Read:"Lest",
+    Recent:"Sist oppdatert", Title:"Tittel", Pages:"Sider",
+    ExportImport:"Eksport / import (JSON)", Json:"JSON",
+    Added:"Lagt til i hylle.", Saved:"Lagret.", Removed:"Fjernet fra hyller.", Undone:"Angret.",
+    NeedName:"Skriv inn navn.",
+    NeedQuery:"Skriv inn et søkeord.",
+    CodeMissing:"Skriv inn klassekode.",
+    CodeNotFound:"Klassekode finnes ikke. Sjekk at du har skrevet riktig.",
+    NotLogged:"Ikke logget inn",
+    LoggedIn:"Logget inn.",
+    LoggedOut:"Logget ut.",
+    Searching:"Søker i kilder…",
+    SearchFail:"Kunne ikke søke. Sjekk internett og prøv igjen.",
+    Empty:"Ingen resultater.",
+    Source:"Kilde",
+  },
+  en: {
+    Start:"Start", Class:"Class", Find:"Find books", Mine:"My reading", Teacher:"Teacher",
+    Login:"Log in", Logout:"Log out", Reset:"Reset all",
+    Name:"Name", Role:"Role", Student:"Student", TeacherRole:"Teacher", Email:"Email (optional)",
+    Fix:"Please fix this",
+    ForStudent:"For students", ForTeacher:"For teachers", ClassCode:"Class code",
+    Join:"Join class", Leave:"Leave class", CreateClass:"Create class",
+    Copy:"Copy", DeleteClass:"Delete class",
+    Search:"Search", Clear:"Clear", Query:"Search", FilterLang:"Language filter",
+    Shelf:"Shelf", Sort:"Sort", Reading:"Reading", Want:"Want to read", Read:"Read",
+    Recent:"Recently updated", Title:"Title", Pages:"Pages",
+    ExportImport:"Export / import (JSON)", Json:"JSON",
+    Added:"Added to shelf.", Saved:"Saved.", Removed:"Removed.", Undone:"Undone.",
+    NeedName:"Enter your name.",
+    NeedQuery:"Enter a search term.",
+    CodeMissing:"Enter class code.",
+    CodeNotFound:"Class code not found. Check spelling.",
+    NotLogged:"Not logged in",
+    LoggedIn:"Logged in.",
+    LoggedOut:"Logged out.",
+    Searching:"Searching sources…",
+    SearchFail:"Search failed. Check internet and try again.",
+    Empty:"No results.",
+    Source:"Source",
+  },
+  ar: {
+    Start:"البدء", Class:"الصف", Find:"ابحث عن كتب", Mine:"قراءتي", Teacher:"المعلم",
+    Login:"تسجيل الدخول", Logout:"تسجيل الخروج", Reset:"إعادة ضبط",
+    Name:"الاسم", Role:"الدور", Student:"طالب", TeacherRole:"معلم", Email:"البريد الإلكتروني (اختياري)",
+    Fix:"يرجى تصحيح ما يلي",
+    ForStudent:"للطلاب", ForTeacher:"للمعلمين", ClassCode:"رمز الصف",
+    Join:"الانضمام للصف", Leave:"مغادرة الصف", CreateClass:"إنشاء صف",
+    Copy:"نسخ", DeleteClass:"حذف الصف",
+    Search:"بحث", Clear:"مسح", Query:"بحث", FilterLang:"تصفية اللغة",
+    Shelf:"الرف", Sort:"ترتيب", Reading:"أقرأ الآن", Want:"أريد القراءة", Read:"تمت القراءة",
+    Recent:"الأحدث", Title:"العنوان", Pages:"الصفحات",
+    ExportImport:"تصدير/استيراد (JSON)", Json:"JSON",
+    Added:"تمت الإضافة.", Saved:"تم الحفظ.", Removed:"تمت الإزالة.", Undone:"تم التراجع.",
+    NeedName:"أدخل الاسم.",
+    NeedQuery:"أدخل عبارة بحث.",
+    CodeMissing:"أدخل رمز الصف.",
+    CodeNotFound:"رمز الصف غير موجود.",
+    NotLogged:"غير مسجل",
+    LoggedIn:"تم تسجيل الدخول.",
+    LoggedOut:"تم تسجيل الخروج.",
+    Searching:"جارٍ البحث…",
+    SearchFail:"فشل البحث. تحقق من الإنترنت.",
+    Empty:"لا توجد نتائج.",
+    Source:"المصدر",
+  },
+  uk: {
+    Start:"Початок", Class:"Клас", Find:"Пошук книг", Mine:"Моє читання", Teacher:"Вчитель",
+    Login:"Увійти", Logout:"Вийти", Reset:"Скинути все",
+    Name:"Ім’я", Role:"Роль", Student:"Учень", TeacherRole:"Вчитель", Email:"Email (необов’язково)",
+    Fix:"Виправте, будь ласка",
+    ForStudent:"Для учнів", ForTeacher:"Для вчителів", ClassCode:"Код класу",
+    Join:"Приєднатися", Leave:"Вийти з класу", CreateClass:"Створити клас",
+    Copy:"Копіювати", DeleteClass:"Видалити клас",
+    Search:"Пошук", Clear:"Очистити", Query:"Пошук", FilterLang:"Фільтр мови",
+    Shelf:"Полиця", Sort:"Сортування", Reading:"Читаю", Want:"Хочу прочитати", Read:"Прочитано",
+    Recent:"Останні", Title:"Назва", Pages:"Сторінки",
+    ExportImport:"Експорт/імпорт (JSON)", Json:"JSON",
+    Added:"Додано.", Saved:"Збережено.", Removed:"Видалено.", Undone:"Скасовано.",
+    NeedName:"Введіть ім’я.",
+    NeedQuery:"Введіть запит.",
+    CodeMissing:"Введіть код класу.",
+    CodeNotFound:"Код класу не знайдено.",
+    NotLogged:"Не увійшли",
+    LoggedIn:"Увійшли.",
+    LoggedOut:"Вийшли.",
+    Searching:"Пошук…",
+    SearchFail:"Помилка пошуку. Перевірте інтернет.",
+    Empty:"Немає результатів.",
+    Source:"Джерело",
+  },
+  ru: {
+    Start:"Старт", Class:"Класс", Find:"Поиск книг", Mine:"Моё чтение", Teacher:"Учитель",
+    Login:"Войти", Logout:"Выйти", Reset:"Сбросить всё",
+    Name:"Имя", Role:"Роль", Student:"Ученик", TeacherRole:"Учитель", Email:"Email (необязательно)",
+    Fix:"Пожалуйста, исправьте",
+    ForStudent:"Для учеников", ForTeacher:"Для учителей", ClassCode:"Код класса",
+    Join:"Присоединиться", Leave:"Покинуть класс", CreateClass:"Создать класс",
+    Copy:"Копировать", DeleteClass:"Удалить класс",
+    Search:"Поиск", Clear:"Очистить", Query:"Поиск", FilterLang:"Фильтр языка",
+    Shelf:"Полка", Sort:"Сортировка", Reading:"Читаю", Want:"Хочу прочитать", Read:"Прочитано",
+    Recent:"Недавние", Title:"Название", Pages:"Страницы",
+    ExportImport:"Экспорт/импорт (JSON)", Json:"JSON",
+    Added:"Добавлено.", Saved:"Сохранено.", Removed:"Удалено.", Undone:"Отменено.",
+    NeedName:"Введите имя.",
+    NeedQuery:"Введите запрос.",
+    CodeMissing:"Введите код класса.",
+    CodeNotFound:"Код класса не найден.",
+    NotLogged:"Не вошли",
+    LoggedIn:"Вошли.",
+    LoggedOut:"Вышли.",
+    Searching:"Поиск…",
+    SearchFail:"Ошибка поиска. Проверьте интернет.",
+    Empty:"Нет результатов.",
+    Source:"Источник",
+  },
+  th: {
+    Start:"เริ่ม", Class:"ชั้นเรียน", Find:"ค้นหาหนังสือ", Mine:"การอ่านของฉัน", Teacher:"ครู",
+    Login:"เข้าสู่ระบบ", Logout:"ออกจากระบบ", Reset:"รีเซ็ตทั้งหมด",
+    Name:"ชื่อ", Role:"บทบาท", Student:"นักเรียน", TeacherRole:"ครู", Email:"อีเมล (ไม่บังคับ)",
+    Fix:"โปรดแก้ไข",
+    ForStudent:"สำหรับนักเรียน", ForTeacher:"สำหรับครู", ClassCode:"รหัสชั้นเรียน",
+    Join:"เข้าร่วมชั้นเรียน", Leave:"ออกจากชั้นเรียน", CreateClass:"สร้างชั้นเรียน",
+    Copy:"คัดลอก", DeleteClass:"ลบชั้นเรียน",
+    Search:"ค้นหา", Clear:"ล้าง", Query:"ค้นหา", FilterLang:"ตัวกรองภาษา",
+    Shelf:"ชั้นวาง", Sort:"เรียง", Reading:"กำลังอ่าน", Want:"อยากอ่าน", Read:"อ่านแล้ว",
+    Recent:"ล่าสุด", Title:"ชื่อเรื่อง", Pages:"หน้า",
+    ExportImport:"ส่งออก/นำเข้า (JSON)", Json:"JSON",
+    Added:"เพิ่มแล้ว", Saved:"บันทึกแล้ว", Removed:"ลบแล้ว", Undone:"ยกเลิกแล้ว",
+    NeedName:"กรอกชื่อ",
+    NeedQuery:"กรอกคำค้นหา",
+    CodeMissing:"กรอกรหัสชั้นเรียน",
+    CodeNotFound:"ไม่พบรหัสชั้นเรียน",
+    NotLogged:"ยังไม่เข้าสู่ระบบ",
+    LoggedIn:"เข้าสู่ระบบแล้ว",
+    LoggedOut:"ออกจากระบบแล้ว",
+    Searching:"กำลังค้นหา…",
+    SearchFail:"ค้นหาไม่สำเร็จ ตรวจสอบอินเทอร์เน็ต",
+    Empty:"ไม่พบผลลัพธ์",
+    Source:"แหล่งข้อมูล",
+  }
+};
+
+function getUiLang(){ return localStorage.getItem("leseloftet_ui_lang") || "no"; }
+function setUiLang(lang){ localStorage.setItem("leseloftet_ui_lang", lang); }
+
+function isRtlLang(lang){ return lang === "ar"; }
+function t(key){
+  const lang = getUiLang();
+  return (I18N[lang] && I18N[lang][key]) || (I18N.no[key] || key);
+}
+
+function applyUiText(){
+  // Tabs
+  tabStart.textContent = t("Start");
+  tabKlasse.textContent = t("Class");
+  tabFinn.textContent = t("Find");
+  tabMin.textContent = t("Mine");
+  tabLaerer.textContent = t("Teacher");
+
+  // Headings and labels
+  hStart.textContent = t("Start");
+  hClass.textContent = t("Class");
+  hFind.textContent = t("Find");
+  hMine.textContent = t("Mine");
+  hTeacher.textContent = t("Teacher");
+
+  lName.textContent = t("Name");
+  lRole.textContent = t("Role");
+  optStudent.textContent = t("Student");
+  optTeacher.textContent = t("TeacherRole");
+  lEmail.textContent = t("Email");
+
+  btnLogin.textContent = t("Login");
+  btnLogout.textContent = t("Logout");
+  btnReset.textContent = t("Reset");
+
+  hFix.textContent = t("Fix");
+  hFix2.textContent = t("Fix");
+  hFix3.textContent = t("Fix");
+
+  hForStudent.textContent = t("ForStudent");
+  hForTeacher.textContent = t("ForTeacher");
+  lClassCode.textContent = t("ClassCode");
+  btnJoinClass.textContent = t("Join");
+  btnLeaveClass.textContent = t("Leave");
+  btnCreateClass.textContent = t("CreateClass");
+  btnCopyCode.textContent = t("Copy");
+  btnDeleteClass.textContent = t("DeleteClass");
+
+  lQuery.textContent = t("Query");
+  lFilterLang.textContent = t("FilterLang");
+  btnSearch.textContent = t("Search");
+  btnClearSearch.textContent = t("Clear");
+
+  lShelf.textContent = t("Shelf");
+  lSort.textContent = t("Sort");
+  optReading.textContent = t("Reading");
+  optWant.textContent = t("Want");
+  optRead.textContent = t("Read");
+  optRecent.textContent = t("Recent");
+  optTitle.textContent = t("Title");
+  optPages.textContent = t("Pages");
+
+  sumExport.textContent = t("ExportImport");
+  lJson.textContent = t("Json");
+
+  // Static text hints kept short; can be localized later
+}
+
+/* ============ Storage / State ============ */
+const KEY = "leseloftet_mvp_v3";
+
+function loadState(){
+  const raw = localStorage.getItem(KEY);
+  if(!raw){
+    return {
+      users:{}, session:null,
+      classes:{}, classMembers:{},
+      shelves:{}, progress:{},
+      works:{}
+    };
+  }
+  try{ return JSON.parse(raw); } catch { return null; }
+}
+function saveState(s){ localStorage.setItem(KEY, JSON.stringify(s)); }
+let S = loadState(); if(!S){ localStorage.removeItem(KEY); S = loadState(); }
+
+function uid(prefix="u"){ return prefix + "_" + Math.random().toString(16).slice(2) + Date.now().toString(16); }
+function nowISO(){ return new Date().toISOString(); }
+function escapeHtml(str){
+  return String(str||"")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+function ensureShelf(userId){
+  if(!S.shelves[userId]) S.shelves[userId] = { want:{}, reading:{}, read:{} };
+  if(!S.progress[userId]) S.progress[userId] = {};
+}
+
+function getSessionUser(){ return S.session ? (S.users[S.session.userId] || null) : null; }
+
+/* ============ Toast (with undo) ============ */
+const toastEl = toast, toastMsgEl = toastMsg, toastUndoEl = toastUndo, toastCloseEl = toastClose;
+let toastTimer=null, undoFn=null;
+function showToast(msg, undo){
+  toastMsgEl.textContent = msg;
+  undoFn = undo || null;
+  toastUndoEl.style.display = undoFn ? "inline-block" : "none";
+  toastEl.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, 3200);
+}
+function hideToast(){ toastEl.style.display="none"; undoFn=null; toastUndoEl.style.display="none"; }
+toastUndoEl.addEventListener("click", ()=>{ if(undoFn) undoFn(); hideToast(); });
+toastCloseEl.addEventListener("click", hideToast);
+
+/* ============ Navigation ============ */
+const views = { Start:viewStart, Klasse:viewKlasse, Finn:viewFinn, Min:viewMin, Laerer:viewLaerer };
+const tabs = { Start:tabStart, Klasse:tabKlasse, Finn:tabFinn, Min:tabMin, Laerer:tabLaerer };
+function setActiveTab(name){
+  for(const k of Object.keys(views)){
+    views[k].style.display = (k===name) ? "" : "none";
+    tabs[k].setAttribute("aria-current", k===name ? "page" : "false");
+  }
+  main.focus();
+}
+tabStart.addEventListener("click", ()=> setActiveTab("Start"));
+tabKlasse.addEventListener("click", ()=> setActiveTab("Klasse"));
+tabFinn.addEventListener("click", ()=> setActiveTab("Finn"));
+tabMin.addEventListener("click", ()=> setActiveTab("Min"));
+tabLaerer.addEventListener("click", ()=> setActiveTab("Laerer"));
+btnGoKlasse.addEventListener("click", ()=> setActiveTab("Klasse"));
+
+/* ============ Error helpers ============ */
+function showErrors(boxId, listId, errors){
+  const box = document.getElementById(boxId);
+  const list = document.getElementById(listId);
+  if(!errors.length){ box.style.display="none"; list.innerHTML=""; return; }
+  list.innerHTML = errors.map(e=>`<li>${escapeHtml(e)}</li>`).join("");
+  box.style.display="block";
+}
+
+/* ============ Auth ============ */
+function clearAuthFieldErrors(){
+  inpName.classList.remove("error");
+  selRole.classList.remove("error");
+}
+btnLogin.addEventListener("click", ()=>{
+  clearAuthFieldErrors();
+  const name = inpName.value.trim();
+  const role = selRole.value;
+  const email = inpEmail.value.trim();
+
+  const errors=[];
+  if(!name){ errors.push(t("NeedName")); inpName.classList.add("error"); }
+  showErrors("authErrors","authErrorList", errors);
+  if(errors.length){ inpName.focus(); return; }
+
+  let existing = Object.values(S.users).find(u =>
+    u.name.toLowerCase()===name.toLowerCase() &&
+    u.role===role &&
+    (email ? u.email===email : true)
+  );
+
+  let user = existing;
+  if(!user){
+    const id = uid("u");
+    user = { id, name, email, role, createdAt: nowISO(), classId:null };
+    S.users[id] = user;
+  }
+  S.session = { userId: user.id };
+  ensureShelf(user.id);
+  saveState(S);
+  render();
+  showToast(t("LoggedIn"));
+  setActiveTab("Klasse");
+});
+
+btnReset.addEventListener("click", ()=>{
+  const ok = confirm("Nullstill alt lokalt? Dette sletter alle data i nettleseren.");
+  if(!ok) return;
+  localStorage.removeItem(KEY);
+  S = loadState();
+  render();
+  showToast(t("Reset"));
+});
+
+btnLogout.addEventListener("click", ()=>{
+  S.session = null;
+  saveState(S);
+  render();
+  showToast(t("LoggedOut"));
+  setActiveTab("Start");
+});
+
+/* ============ Classes ============ */
+function generateCode(){
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code=""; for(let i=0;i<6;i++) code += alphabet[Math.floor(Math.random()*alphabet.length)];
+  return code;
+}
+function getTeacherClass(teacherId){
+  return Object.values(S.classes).find(c => c.teacherId===teacherId) || null;
+}
+function setClassBusy(isBusy, msg){
+  classSpinner.style.display = isBusy ? "inline-block" : "none";
+  classStatusText.textContent = msg || "—";
+}
+
+btnCreateClass.addEventListener("click", ()=>{
+  const me = getSessionUser();
+  if(!me || me.role!=="teacher") return;
+  if(getTeacherClass(me.id)){ showToast("Har allerede klasse."); return; }
+
+  setClassBusy(true, "…");
+  const classId = uid("c");
+  S.classes[classId] = { id:classId, code:generateCode(), teacherId:me.id, createdAt:nowISO() };
+  S.classMembers[classId] = [];
+  saveState(S);
+  setClassBusy(false, "OK");
+  renderClassUI();
+  renderTeacherPanel();
+  showToast("OK");
+});
+
+btnDeleteClass.addEventListener("click", ()=>{
+  const me = getSessionUser();
+  const c = me ? getTeacherClass(me.id) : null;
+  if(!c) return;
+  const ok = confirm("Slette klassen?");
+  if(!ok) return;
+
+  const members = S.classMembers[c.id] || [];
+  for(const uid of members){
+    const u = S.users[uid];
+    if(u) u.classId = null;
+  }
+  delete S.classMembers[c.id];
+  delete S.classes[c.id];
+  saveState(S);
+  renderClassUI();
+  renderTeacherPanel();
+  showToast("OK");
+});
+
+btnCopyCode.addEventListener("click", async ()=>{
+  const me = getSessionUser();
+  const c = me ? getTeacherClass(me.id) : null;
+  if(!c) return;
+  try{ await navigator.clipboard.writeText(c.code); showToast("OK"); }
+  catch{ showToast("Kunne ikke kopiere"); }
+});
+
+function clearJoinErrors(){ inpClassCode.classList.remove("error"); }
+btnJoinClass.addEventListener("click", ()=>{
+  const me = getSessionUser();
+  if(!me || me.role!=="student") return;
+
+  clearJoinErrors();
+  const code = inpClassCode.value.trim().toUpperCase();
+  const errors=[];
+  if(!code){ errors.push(t("CodeMissing")); inpClassCode.classList.add("error"); }
+  const cls = Object.values(S.classes).find(c => c.code===code);
+  if(code && !cls){ errors.push(t("CodeNotFound")); inpClassCode.classList.add("error"); }
+
+  showErrors("joinErrors","joinErrorList", errors);
+  if(errors.length){ inpClassCode.focus(); return; }
+
+  if(me.classId && S.classMembers[me.classId]){
+    S.classMembers[me.classId] = S.classMembers[me.classId].filter(id=>id!==me.id);
+  }
+
+  me.classId = cls.id;
+  if(!S.classMembers[cls.id]) S.classMembers[cls.id] = [];
+  if(!S.classMembers[cls.id].includes(me.id)) S.classMembers[cls.id].push(me.id);
+
+  saveState(S);
+  renderClassUI();
+  renderTeacherPanel();
+  showToast("OK");
+});
+
+btnLeaveClass.addEventListener("click", ()=>{
+  const me = getSessionUser();
+  if(!me || me.role!=="student") return;
+  if(!me.classId){ showToast("—"); return; }
+
+  const old = me.classId;
+  if(S.classMembers[old]) S.classMembers[old] = S.classMembers[old].filter(id=>id!==me.id);
+  me.classId = null;
+  saveState(S);
+  renderClassUI();
+  renderTeacherPanel();
+  showToast("OK");
+});
+
+/* ============ Multi-source book search ============ */
+function normKey(title, author, year){
+  return (title||"").toLowerCase().replace(/\s+/g," ").trim() + "|" +
+         (author||"").toLowerCase().replace(/\s+/g," ").trim() + "|" +
+         String(year||"").trim();
+}
+
+function asWork(obj){
+  // work: {id,title,author,year,lang,cover,source,url?}
+  const key = obj.id || uid("w");
+  return { ...obj, id:key };
+}
+function upsertWork(work){
+  S.works[work.id] = { ...S.works[work.id], ...work };
+  saveState(S);
+  return S.works[work.id];
+}
+
+/* Open Library */
+async function searchOpenLibrary(q, lang){
+  const url = new URL("https://openlibrary.org/search.json");
+  url.searchParams.set("q", q);
+  url.searchParams.set("limit", "12");
+  if(lang) url.searchParams.set("language", lang);
+  const res = await fetch(url.toString());
+  if(!res.ok) throw new Error("OL failed");
+  const data = await res.json();
+  const docs = (data.docs||[]).slice(0,12);
+  return docs.map(doc=>{
+    const workKey = doc.key || "";
+    const id = "ol_" + btoa(unescape(encodeURIComponent(workKey))).replace(/=+/g,"").slice(0,22);
+    const title = doc.title || "—";
+    const author = (doc.author_name && doc.author_name[0]) ? doc.author_name[0] : "—";
+    const year = doc.first_publish_year || doc.publish_year?.[0] || "";
+    const wlang = (doc.language && doc.language[0]) ? doc.language[0] : "";
+    const cover = doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : "";
+    const url = workKey ? ("https://openlibrary.org" + workKey) : "";
+    return asWork({ id, title, author, year, lang:wlang, cover, source:"Open Library", url });
+  });
+}
+
+/* Wikidata SPARQL (simple title contains) */
+async function searchWikidata(q){
+  // Keep it small to avoid heavy queries.
+  const endpoint = "https://query.wikidata.org/sparql";
+  const sparql = `
+    SELECT ?work ?workLabel ?authorLabel ?pubYear WHERE {
+      ?work wdt:P31/wdt:P279* wd:Q7725634 .   # literary work (incl. book-ish works)
+      ?work rdfs:label ?label .
+      FILTER(LANG(?label) IN ("en","no","nb","nn","ar","ru","uk","th")) .
+      FILTER(CONTAINS(LCASE(STR(?label)), LCASE("${q.replace(/"/g,'\\"')}"))) .
+      OPTIONAL { ?work wdt:P50 ?author . }
+      OPTIONAL { ?work wdt:P577 ?pubDate . BIND(YEAR(?pubDate) AS ?pubYear) }
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "no,en,nb,nn,ar,ru,uk,th". }
+    } LIMIT 10
+  `;
+  const url = new URL(endpoint);
+  url.searchParams.set("format","json");
+  url.searchParams.set("query", sparql);
+
+  const res = await fetch(url.toString(), { headers: { "Accept":"application/sparql-results+json" }});
+  if(!res.ok) throw new Error("WD failed");
+  const data = await res.json();
+
+  const rows = data.results.bindings || [];
+  return rows.map(r=>{
+    const id = "wd_" + (r.work.value.split("/").pop() || uid("wd"));
+    const title = r.workLabel?.value || "—";
+    const author = r.authorLabel?.value || "—";
+    const year = r.pubYear?.value || "";
+    const url = r.work.value;
+    return asWork({ id, title, author, year, lang:"", cover:"", source:"Wikidata", url });
+  });
+}
+
+/* Gutendex (Project Gutenberg metadata) */
+async function searchGutendex(q){
+  const url = new URL("https://gutendex.com/books");
+  url.searchParams.set("search", q);
+  const res = await fetch(url.toString());
+  if(!res.ok) throw new Error("Guten failed");
+  const data = await res.json();
+  const results = (data.results || []).slice(0,12);
+  return results.map(b=>{
+    const id = "gu_" + b.id;
+    const title = b.title || "—";
+    const author = (b.authors && b.authors[0]) ? b.authors[0].name : "—";
+    const year = ""; // Gutenberg doesn't always give year
+    const lang = (b.languages && b.languages[0]) ? b.languages[0] : "";
+    const cover = (b.formats && b.formats["image/jpeg"]) ? b.formats["image/jpeg"] : "";
+    const url = (b.formats && (b.formats["text/html"] || b.formats["text/plain; charset=utf-8"])) || "";
+    return asWork({ id, title, author, year, lang, cover, source:"Gutendex", url });
+  });
+}
+
+const searchSpinnerEl = searchSpinner;
+function setSearchBusy(isBusy, msg){
+  searchSpinnerEl.style.display = isBusy ? "inline-block" : "none";
+  searchInfo.textContent = msg || "—";
+}
+
+btnSearch.addEventListener("click", async ()=>{
+  const me = getSessionUser();
+  if(!me) return;
+
+  inpSearch.classList.remove("error");
+  const q = inpSearch.value.trim();
+  const lang = selLang.value;
+
+  const errors=[];
+  if(!q){ errors.push(t("NeedQuery")); inpSearch.classList.add("error"); }
+  showErrors("searchErrors","searchErrorList", errors);
+  if(errors.length){ inpSearch.focus(); return; }
+
+  searchResults.innerHTML = "";
+  setSearchBusy(true, t("Searching"));
+
+  try{
+    const [ol, wd, gu] = await Promise.allSettled([
+      searchOpenLibrary(q, lang),
+      searchWikidata(q),
+      searchGutendex(q)
+    ]);
+
+    let all = [];
+    if(ol.status==="fulfilled") all = all.concat(ol.value);
+    if(wd.status==="fulfilled") all = all.concat(wd.value);
+    if(gu.status==="fulfilled") all = all.concat(gu.value);
+
+    // de-dup across sources
+    const map = new Map();
+    for(const w of all){
+      const k = normKey(w.title, w.author, w.year);
+      if(!map.has(k)) map.set(k, w);
+      else{
+        // keep cover if missing
+        const ex = map.get(k);
+        if(!ex.cover && w.cover) ex.cover = w.cover;
+        // keep url if missing
+        if(!ex.url && w.url) ex.url = w.url;
+        // merge source tags
+        if(ex.source !== w.source) ex.source = ex.source + " + " + w.source;
+      }
+    }
+
+    const merged = Array.from(map.values()).slice(0,24);
+    setSearchBusy(false, `${merged.length} / ${all.length}`);
+
+    renderSearchResults(merged);
+  } catch(e){
+    setSearchBusy(false, t("SearchFail"));
+  }
+});
+
+btnClearSearch.addEventListener("click", ()=>{
+  inpSearch.value = "";
+  searchResults.innerHTML = "";
+  setSearchBusy(false, "—");
+});
+
+function renderSearchResults(works){
+  searchResults.innerHTML = "";
+  const me = getSessionUser();
+  if(!works.length){
+    searchResults.innerHTML = `<div class="muted">${escapeHtml(t("Empty"))}</div>`;
+    return;
+  }
+
+  for(const w of works){
+    const work = upsertWork(w);
+    const el = document.createElement("div");
+    el.className = "item";
+
+    const title = escapeHtml(work.title);
+    const author = escapeHtml(work.author);
+    const year = work.year ? " • " + escapeHtml(String(work.year)) : "";
+    const lang = work.lang ? " • " + escapeHtml(work.lang) : "";
+    const src = escapeHtml(work.source || "");
+
+    el.innerHTML = `
+      <div class="item-top">
+        <div class="cover">${work.cover ? `<img src="${work.cover}" alt="Cover">` : ""}</div>
+        <div class="grow">
+          <p class="title">${title}</p>
+          <div class="meta">${author}${year}${lang}</div>
+          <div class="chips">
+            <span class="chip">${escapeHtml(t("Source"))}: <b>${src}</b></span>
+            ${work.url ? `<a class="chip" href="${work.url}" target="_blank" rel="noreferrer">Link</a>` : ``}
+          </div>
+          <div class="chips" role="group" aria-label="Add to shelf">
+            <button class="primary" data-act="want">${escapeHtml(t("Want"))}</button>
+            <button class="primary" data-act="reading">${escapeHtml(t("Reading"))}</button>
+            <button class="primary" data-act="read">${escapeHtml(t("Read"))}</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    el.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const act = btn.getAttribute("data-act");
+        addToShelf(me.id, work.id, act);
+        showToast(t("Added"));
+        renderShelf();
+        renderTeacherPanel();
+      });
+    });
+
+    searchResults.appendChild(el);
+  }
+}
+
+/* ============ Shelf ============ */
+function addToShelf(userId, workId, shelf){
+  ensureShelf(userId);
+  for(const sh of ["want","reading","read"]){
+    if(S.shelves[userId][sh][workId]) delete S.shelves[userId][sh][workId];
+  }
+  S.shelves[userId][shelf][workId] = { workId, addedAt: nowISO(), updatedAt: nowISO() };
+  saveState(S);
+}
+function removeFromAllShelves(userId, workId){
+  ensureShelf(userId);
+  for(const sh of ["want","reading","read"]){
+    if(S.shelves[userId][sh][workId]) delete S.shelves[userId][sh][workId];
+  }
+  saveState(S);
+}
+function logProgress(userId, workId, pages, note){
+  ensureShelf(userId);
+  if(!S.progress[userId][workId]) S.progress[userId][workId] = { pagesLogged:0, lastAt:null, notes:[] };
+  const p = S.progress[userId][workId];
+  p.pagesLogged += pages;
+  p.lastAt = nowISO();
+  if(note && note.trim()){
+    p.notes.unshift({ at: nowISO(), text: note.trim() });
+    p.notes = p.notes.slice(0,10);
+  }
+  saveState(S);
+}
+
+selShelf.addEventListener("change", renderShelf);
+selSort.addEventListener("change", renderShelf);
+
+function renderShelf(){
+  const me = getSessionUser();
+  if(!me) return;
+  ensureShelf(me.id);
+
+  const shelf = selShelf.value;
+  const sort = selSort.value;
+
+  const entries = Object.values(S.shelves[me.id][shelf] || {});
+  const enriched = entries.map(e=>{
+    const work = S.works[e.workId] || { title:"—", author:"—", year:"", lang:"", cover:"", source:"" };
+    const prog = (S.progress[me.id] && S.progress[me.id][e.workId]) ? S.progress[me.id][e.workId] : { pagesLogged:0, lastAt:null, notes:[] };
+    return { ...e, work, prog };
+  });
+
+  enriched.sort((a,b)=>{
+    if(sort==="title") return (a.work.title||"").localeCompare(b.work.title||"", "no");
+    if(sort==="pages") return (b.prog.pagesLogged||0) - (a.prog.pagesLogged||0);
+    return String(b.updatedAt||"").localeCompare(String(a.updatedAt||""));
+  });
+
+  shelfList.innerHTML = "";
+  if(!enriched.length){
+    shelfList.innerHTML = `<div class="muted">${escapeHtml(t("Empty"))}</div>`;
+    return;
+  }
+
+  for(const e of enriched){
+    const w = e.work;
+    const pages = e.prog.pagesLogged || 0;
+    const last = e.prog.lastAt ? new Date(e.prog.lastAt).toLocaleString() : "—";
+    const lastNote = e.prog.notes && e.prog.notes[0] ? e.prog.notes[0].text : "";
+
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = `
+      <div class="item-top">
+        <div class="cover">${w.cover ? `<img src="${w.cover}" alt="Cover">` : ""}</div>
+        <div class="grow">
+          <p class="title">${escapeHtml(w.title)}</p>
+          <div class="meta">${escapeHtml(w.author)}${w.year ? " • " + escapeHtml(String(w.year)) : ""}${w.lang ? " • " + escapeHtml(w.lang) : ""}</div>
+          <div class="chips">
+            <span class="chip ok">${escapeHtml(t("Pages"))}: <b>${pages}</b></span>
+            <span class="chip">Sist: ${escapeHtml(last)}</span>
+            <span class="chip">${escapeHtml(t("Source"))}: ${escapeHtml(w.source||"")}</span>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="split">
+            <div>
+              <label>${escapeHtml(t("Pages"))} (+)</label>
+              <input class="inpPages" type="number" min="0" step="1" inputmode="numeric" placeholder="12" />
+            </div>
+            <div>
+              <label>${escapeHtml(t("Shelf"))}</label>
+              <select class="selMove">
+                <option value="reading">${escapeHtml(t("Reading"))}</option>
+                <option value="want">${escapeHtml(t("Want"))}</option>
+                <option value="read">${escapeHtml(t("Read"))}</option>
+              </select>
+            </div>
+          </div>
+
+          <label>Refleksjon</label>
+          <textarea class="txtNote" placeholder="1–3 setninger.">${escapeHtml(lastNote)}</textarea>
+
+          <div class="row" style="margin-top:10px;">
+            <button class="primary btnSave">${escapeHtml(t("Saved"))}</button>
+            <button class="danger btnRemove">${escapeHtml(t("Remove") || "Fjern")}</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    el.querySelector(".selMove").value = shelf;
+
+    el.querySelector(".btnSave").addEventListener("click", ()=>{
+      const me = getSessionUser(); if(!me) return;
+      const pagesVal = Number(el.querySelector(".inpPages").value || 0);
+      const moveTo = el.querySelector(".selMove").value;
+      const note = el.querySelector(".txtNote").value;
+
+      if(pagesVal > 0 || (note && note.trim())) logProgress(me.id, e.workId, Math.max(0,pagesVal), note);
+
+      addToShelf(me.id, e.workId, moveTo);
+      S.shelves[me.id][moveTo][e.workId].updatedAt = nowISO();
+      saveState(S);
+
+      showToast(t("Saved"));
+      renderShelf();
+      renderTeacherPanel();
+    });
+
+    el.querySelector(".btnRemove").addEventListener("click", ()=>{
+      const me = getSessionUser(); if(!me) return;
+
+      const snapshot = {
+        shelves: JSON.parse(JSON.stringify(S.shelves[me.id] || {want:{},reading:{},read:{}})),
+        progress: JSON.parse(JSON.stringify(S.progress[me.id] || {})),
+      };
+
+      removeFromAllShelves(me.id, e.workId);
+
+      showToast(t("Removed"), ()=>{
+        S.shelves[me.id] = snapshot.shelves;
+        S.progress[me.id] = snapshot.progress;
+        saveState(S);
+        renderShelf();
+        renderTeacherPanel();
+        showToast(t("Undone"));
+      });
+
+      renderShelf();
+      renderTeacherPanel();
+    });
+
+    shelfList.appendChild(el);
+  }
+}
+
+/* ============ Export/Import ============ */
+btnExport.addEventListener("click", ()=>{
+  const me = getSessionUser(); if(!me) return;
+  ensureShelf(me.id);
+  const payload = { user:{id:me.id,name:me.name,role:me.role}, shelves:S.shelves[me.id], progress:S.progress[me.id], works:S.works };
+  txtJson.value = JSON.stringify(payload, null, 2);
+  showToast("OK");
+});
+btnImport.addEventListener("click", ()=>{
+  const me = getSessionUser(); if(!me) return;
+  try{
+    const raw = txtJson.value.trim();
+    if(!raw){ showToast("—"); return; }
+    const payload = JSON.parse(raw);
+    ensureShelf(me.id);
+    if(payload.works) S.works = { ...S.works, ...payload.works };
+    if(payload.shelves) S.shelves[me.id] = payload.shelves;
+    if(payload.progress) S.progress[me.id] = payload.progress;
+    saveState(S);
+    renderShelf();
+    renderTeacherPanel();
+    showToast("OK");
+  } catch { showToast("Ugyldig JSON"); }
+});
+
+/* ============ Teacher panel (minimal) ============ */
+function renderTeacherPanel(){
+  const me = getSessionUser();
+  if(!me || me.role!=="teacher"){ teacherPanel.style.display="none"; return; }
+  teacherPanel.style.display="";
+
+  const cls = getTeacherClass(me.id);
+  if(!cls){
+    teacherStudentList.innerHTML = `<div class="muted">Opprett en klasse.</div>`;
+    return;
+  }
+
+  const members = (S.classMembers[cls.id] || []).map(id=>S.users[id]).filter(Boolean);
+  if(!members.length){
+    teacherStudentList.innerHTML = `<div class="muted">Ingen elever ennå.</div>`;
+    return;
+  }
+
+  teacherStudentList.innerHTML = members.map(u=>{
+    ensureShelf(u.id);
+    const reading = Object.keys(S.shelves[u.id].reading || {}).length;
+    let pages=0; for(const wId in (S.progress[u.id]||{})) pages += Number(S.progress[u.id][wId].pagesLogged||0);
+    return `<div class="item"><div class="title">${escapeHtml(u.name)}</div><div class="meta">Leser nå: ${reading} • ${escapeHtml(t("Pages"))}: ${pages}</div></div>`;
+  }).join("");
+}
+
+/* ============ Class UI ============ */
+function renderClassUI(){
+  const me = getSessionUser();
+  if(!me) return;
+
+  classRoleHint.textContent = me.role==="teacher" ? t("TeacherRole") : t("Student");
+
+  studentJoinBlock.style.display = me.role==="student" ? "" : "none";
+  teacherBlock.style.display = me.role==="teacher" ? "" : "none";
+
+  if(me.role==="student"){
+    if(me.classId && S.classes[me.classId]){
+      studentClassStatus.textContent = `OK: ${S.classes[me.classId].code}`;
+      inpClassCode.value = S.classes[me.classId].code;
+    } else {
+      studentClassStatus.textContent = "—";
+    }
+  }
+
+  if(me.role==="teacher"){
+    const cls = getTeacherClass(me.id);
+    if(!cls){
+      teacherNoClass.textContent = "—";
+      teacherClassBox.style.display = "none";
+    } else {
+      teacherNoClass.textContent = "";
+      teacherClassBox.style.display = "";
+      teacherClassCode.textContent = cls.code;
+    }
+  }
+}
+
+/* ============ UI language switching ============ */
+selUiLang.value = getUiLang();
+function applyDirAndLang(){
+  const lang = getUiLang();
+  document.documentElement.lang = lang === "no" ? "no" : lang;
+  document.documentElement.dir = isRtlLang(lang) ? "rtl" : "ltr";
+}
+selUiLang.addEventListener("change", ()=>{
+  setUiLang(selUiLang.value);
+  applyDirAndLang();
+  applyUiText();
+  render();
+});
+
+/* ============ Render ============ */
+function render(){
+  applyDirAndLang();
+  applyUiText();
+
+  const me = getSessionUser();
+  if(!me){
+    sessionPill.textContent = t("NotLogged");
+    btnLogout.style.display = "none";
+    // disable role-specific tabs
+    tabMin.disabled = true;
+    tabLaerer.disabled = true;
+    setActiveTab("Start");
+    return;
+  }
+
+  sessionPill.textContent = `${me.name} • ${me.role==="teacher" ? t("TeacherRole") : t("Student")}`;
+  btnLogout.style.display = "inline-block";
+
+  tabMin.disabled = me.role !== "student";
+  tabLaerer.disabled = me.role !== "teacher";
+
+  renderClassUI();
+  renderTeacherPanel();
+  if(me.role==="student") renderShelf();
+
+  // default status texts
+  classStatusText.textContent = "—";
+  searchInfo.textContent = "—";
+}
+
+/* ============ Init ============ */
+render();
+</script>
+</body>
+</html>
